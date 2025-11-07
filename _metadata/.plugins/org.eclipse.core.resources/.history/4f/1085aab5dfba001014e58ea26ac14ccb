@@ -1,0 +1,36 @@
+package com.maheswara.employeeRegistrationForm.security;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.authentication.event.AbstractAuthenticationFailureEvent;
+import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
+import org.springframework.security.authentication.event.LogoutSuccessEvent;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuditLogger {
+	
+	
+	 
+	 @EventListener
+	 public void OnLoginSuccess(AuthenticationSuccessEvent event) {
+		 Authentication auth = event.getAuthentication();
+		 System.out.println("Login Success for user" + auth);
+		 
+	 }
+	 @EventListener
+	 public void OnLogout(LogoutSuccessEvent event) {
+		 Authentication log = event.getAuthentication();
+		 if(log != null) {
+			 
+			 System.out.println("Lgout successfull"+log);
+		 }
+		 
+	 }
+	 @EventListener
+	 public void Loginfailure(AbstractAuthenticationFailureEvent failure) {
+		 System.out.println("Login failed for user:" +failure.getAuthentication().getName());
+	 }
+
+}

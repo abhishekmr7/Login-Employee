@@ -1,0 +1,9 @@
+package com.maheswara.employeeRegistrationForm;
+
+
+@Entity
+public class Model {
+	
+	
+
+}

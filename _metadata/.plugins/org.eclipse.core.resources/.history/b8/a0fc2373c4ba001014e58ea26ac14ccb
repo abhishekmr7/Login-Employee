@@ -1,0 +1,36 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+
+@RestController
+
+public class AuthController {
+	
+	@Autowired
+	private UserService service;
+	
+	@PostMapping("/register")
+	public ResponseEntity<User> getregister(@RequestBody User user){
+		User user1 = service.register(user);
+		return ResponseEntity.ok().body(user1);
+	}
+	@
+	@GetMapping("/login")
+	public ResponseEntity<Optional<User>> getUsername(@PathVariable String username){
+		Optional<User> user = service.findusername(username);
+		return ResponseEntity.status(201).body(user);
+		
+	}
+}

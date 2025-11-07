@@ -1,0 +1,56 @@
+package com.maheswara.employeeRegistrationForm.Service;
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.User.UserBuilder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Repository.UserRepository;
+
+@Service
+public class UserService  implements UserDetailsService{
+	
+	@Autowired 
+	private UserRepository userrepo;
+	
+	@Autowired 
+	private PasswordEncoder encoder;
+	
+	public User register(User user) {
+		user.setPassword(encoder.encode(user.getPassword()));
+		return userrepo.save(user);
+	}
+	
+	public Optional<User> findusername(String username){
+		return userrepo.findByUsername(username);
+
+	}
+
+
+	@Override
+	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+		
+		Optional<User> user = userrepo.findByUsername(username);
+		if(user.isEmpty()) {
+			throw new UsernameNotFoundException("User not found");
+		}
+		
+		else {
+			User u1 = user.get();
+			return org.springframework.security.core.userdetails.User
+					.withUsername(u1.getUsername())
+					.password(u1.getPassword())
+					.roles("user")
+					.build();
+		}
+		
+	}
+
+}

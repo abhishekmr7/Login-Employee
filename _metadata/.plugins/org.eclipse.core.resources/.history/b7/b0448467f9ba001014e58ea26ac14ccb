@@ -1,0 +1,76 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.bind.annotation.*;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            
+            if (userService.findByUsername(user.getUsername()).isPresent()) {
+                return ResponseEntity.badRequest().body(" Username already exists");
+            }
+
+            
+            User newUser = userService.register(user);
+            return ResponseEntity.ok(" User registered successfully: " + newUser.getUsername());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body(" Registration failed: " + e.getMessage());
+        }
+    }
+
+   
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
+        try {
+           
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+
+        
+            String username = authentication.getName();
+            return ResponseEntity.ok(" Login successful for user: " + username);
+
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(401)
+                    .body(" Invalid username or password");
+        }
+    }
+
+ 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(" Logged out successfully");
+    }
+    @PutMapping("/unlock/{username}")
+    public ResponseEntity<?> unlockUser(@PathVariable String username) {
+        userService.unlockAccount(username);
+        return ResponseEntity.ok(" Account unlocked for user: " + username);
+    }
+
+}

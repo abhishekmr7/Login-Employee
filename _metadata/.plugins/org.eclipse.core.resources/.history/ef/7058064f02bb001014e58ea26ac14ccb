@@ -1,0 +1,17 @@
+package com.maheswara.employeeRegistrationForm.Model;
+
+import jakarta.persistence.*;
+import lombok.*;
+import java.time.LocalDateTime;
+
+@Entity
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+public class LoginAudit {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String username;
+    private String eventType; // LOGIN_SUCCESS / LOGOUT / LOCKED
+    private LocalDateTime timestamp = LocalDateTime.now();
+}

@@ -1,0 +1,72 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Service.AuditService;
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "*")
+public class AuthController {
+
+    @Autowired private UserService userService;
+    @Autowired private AuditService auditService;
+    @Autowired private AuthenticationManager authManager;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            User saved = userService.register(user);
+            return ResponseEntity.ok("✅ Registered successfully as " + saved.getRole() + ": " + saved.getUsername());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("❌ " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
+        String username = loginRequest.getUsername();
+        try {
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(username, loginRequest.getPassword()));
+
+            userService.resetFailedAttempts(username);
+            auditService.logEvent(username, "LOGIN_SUCCESS");
+
+            String role = userService.findByUsername(username)
+                    .map(User::getRole)
+                    .orElse("USER");
+
+            return ResponseEntity.ok("✅ Login successful as " + role + ": " + username);
+        } catch (LockedException e) {
+            auditService.logEvent(username, "ACCOUNT_LOCKED");
+            return ResponseEntity.status(403).body("🚫 Account locked after 3 failed attempts");
+        } catch (BadCredentialsException e) {
+            userService.increaseFailedAttempts(username);
+            auditService.logEvent(username, "LOGIN_FAILURE");
+            return ResponseEntity.status(401).body("❌ Invalid credentials");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("⚠️ " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestParam String username) {
+        userService.updateLogoutTime(username);
+        auditService.logEvent(username, "LOGOUT_SUCCESS");
+        return ResponseEntity.ok("👋 Logged out: " + username);
+    }
+
+    @PutMapping("/unlock/{username}")
+    public ResponseEntity<?> unlock(@PathVariable String username) {
+        userService.unlockAccount(username);
+        auditService.logEvent(username, "ACCOUNT_UNLOCKED");
+        return ResponseEntity.ok("🔓 Account unlocked: " + username);
+    }
+}

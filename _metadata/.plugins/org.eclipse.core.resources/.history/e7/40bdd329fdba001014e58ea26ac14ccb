@@ -1,0 +1,57 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    @Autowired
+    private UserService service;
+
+    @Autowired
+    private AuthenticationManager authManager;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            service.register(user);
+            return ResponseEntity.ok("✅ Registered successfully!");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body("❌ Registration failed: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
+        try {
+            Authentication auth = authManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            loginRequest.getUsername(),
+                            loginRequest.getPassword()
+                    )
+            );
+            service.resetFailedAttempts(loginRequest.getUsername());
+            return ResponseEntity.ok(" Login successful for user: " + auth.getName());
+        } catch (LockedException e) {
+            return ResponseEntity.status(403).body(" Account locked due to 3 failed attempts.");
+        } catch (BadCredentialsException e) {
+            service.increaseFailedAttempts(loginRequest.getUsername());
+            return ResponseEntity.status(401).body(" Invalid username or password");
+        }
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestParam String username) {
+        service.updateLogoutTime(username);
+        return ResponseEntity.ok(" User logged out: " + username);
+    }
+}

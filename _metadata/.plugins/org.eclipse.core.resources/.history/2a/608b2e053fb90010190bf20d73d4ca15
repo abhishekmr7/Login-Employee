@@ -1,0 +1,51 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import java.util.List;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.maheswara.employeeRegistrationForm.EmployeeService;
+import com.maheswara.employeeRegistrationForm.Model;
+
+@RestController
+public class EmployeeController {
+	
+	@Autowired
+	private EmployeeService service;
+	
+	@PostMapping("/addEmployee")
+	public Model createEmp(@RequestBody Model model) {
+		return service.create(model);
+	}
+	
+	@GetMapping("/GetAll")
+	public List<Model> FinaAllEmp(){
+		return service.findAllEmployee();
+	}
+	@GetMapping("/{id}")
+	public Model findByid(@PathVariable Long id) {
+		return service.findById(id);
+	}
+	
+	@PutMapping("/update")
+	public Model update(@PathVariable Long id,@RequestBody Model model) {
+		
+		return service.Update(id, model);
+		
+				
+	}
+	@DeleteMapping("/delete")
+	public void delete(@PathVariable Long id) {
+		 service.Delete(id);	
+	}
+	
+
+}

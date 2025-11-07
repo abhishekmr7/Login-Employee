@@ -1,0 +1,56 @@
+package com.maheswara.employeeRegistrationForm.security;
+
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+
+
+    
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> cors.configure(http)) 
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers("/user/**").hasRole("USER")
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .anyRequest().authenticated()
+        )
+        .formLogin(form -> form.disable()) 
+        .httpBasic(basic -> basic.disable());
+
+    return http.build();
+    }
+    @Bean
+    public AuthenticationManager authenticationManager(
+            HttpSecurity http,
+            PasswordEncoder passwordEncoder,
+            UserService userService) throws Exception {
+        return http.getSharedObject(AuthenticationManagerBuilder.class)
+                .userDetailsService(userService)
+                .passwordEncoder(passwordEncoder)
+                .and()
+                .build();
+    }
+    @Bean 
+    public PasswordEncoder passwordencoder() {
+    	return new BCryptPasswordEncoder();
+    }
+}

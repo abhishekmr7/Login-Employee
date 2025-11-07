@@ -1,0 +1,94 @@
+package com.maheswara.employeeRegistrationForm.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Service.UserService;
+
+@RestController
+@RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173")
+public class AuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    // ✅ SIGN UP
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        try {
+            if (userService.findByUsername(user.getUsername()).isPresent()) {
+                return ResponseEntity.badRequest().body("❌ Username already exists");
+            }
+
+            User newUser = userService.register(user);
+            return ResponseEntity.ok("✅ User registered successfully: " + newUser.getUsername());
+
+        } catch (Exception e) {
+            e.printStackTrace(); // 👈 this prints exact reason
+            return ResponseEntity.internalServerError()
+                    .body(" Registration failed: " + e.getMessage());
+        }
+
+    }
+
+    // ✅ LOGIN
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody User loginRequest) {
+        String username = loginRequest.getUsername();
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            username,
+                            loginRequest.getPassword()
+                    )
+            );
+
+            // Login success — reset failed attempts and update login time
+            userService.resetFailedAttempts(username);
+            return ResponseEntity.ok("✅ Login successful for user: " + authentication.getName());
+
+        } catch (LockedException e) {
+            return ResponseEntity.status(403).body("🚫 Account locked due to 3 failed login attempts.");
+        } catch (BadCredentialsException e) {
+            // Increment failed login count
+            userService.increaseFailedAttempts(username);
+            return ResponseEntity.status(401).body("❌ Invalid username or password");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError()
+                    .body("⚠️ Login failed: " + e.getMessage());
+        }
+    }
+
+    // ✅ LOGOUT
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(@RequestParam String username) {
+        try {
+            userService.updateLogoutTime(username);
+            return ResponseEntity.ok("👋 User logged out successfully: " + username);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("⚠️ Logout failed: " + e.getMessage());
+        }
+    }
+
+    // ✅ UNLOCK ACCOUNT
+    @PutMapping("/unlock/{username}")
+    public ResponseEntity<?> unlockUser(@PathVariable String username) {
+        try {
+            userService.unlockAccount(username);
+            return ResponseEntity.ok("🔓 Account unlocked for user: " + username);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError()
+                    .body("⚠️ Unlock failed: " + e.getMessage());
+        }
+    }
+}

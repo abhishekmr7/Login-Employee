@@ -1,0 +1,38 @@
+body {
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #f0f4f8, #d9e7ff);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.auth-container {
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 40px 50px;
+  text-align: center;
+  width: 380px;
+  transition: 0.3s ease;
+}
+
+.toggle-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+input, select {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid
+}

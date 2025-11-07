@@ -1,0 +1,85 @@
+package com.maheswara.employeeRegistrationForm.Service;
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Repository.UserRepository;
+
+@Service
+public class UserService implements UserDetailsService {
+
+    @Autowired
+    private UserRepository userRepo;
+
+    @Autowired
+    private PasswordEncoder encoder;
+
+    
+    public User register(User user) {
+       
+        Optional<User> existingUser = userRepo.findByUsername(user.getUsername());
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Username already exists. Please choose a different one.");
+        }
+
+        user.setPassword(encoder.encode(user.getPassword()));
+
+        user.setRole("USER");
+        return userRepo.save(user);
+    }
+
+   
+    public Optional<User> findByUsername(String username) {
+        return userRepo.findByUsername(username);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+       
+        User u = userRepo.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("❌ User not found: " + username));
+
+       
+        return org.springframework.security.core.userdetails.User
+                .withUsername(u.getUsername())
+                .password(u.getPassword())
+                .roles(u.getRole().toUpperCase()) 
+                .build();
+    }
+
+    /**
+     * Updates the user's password (if you plan to add change-password feature later)
+     */
+    public void updatePassword(String username, String newPassword) {
+        Optional<User> userOpt = userRepo.findByUsername(username);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setPassword(encoder.encode(newPassword));
+            userRepo.save(user);
+        } else {
+            throw new UsernameNotFoundException("User not found for password update: " + username);
+        }
+    }
+
+    /**
+     * Unlocks the user account manually (if locked due to failed attempts)
+     */
+    public void unlockAccount(String username) {
+        Optional<User> userOpt = userRepo.findByUsername(username);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            user.setAccountLocked(false);
+            user.setFailedAttempts(0);
+            userRepo.save(user);
+        } else {
+            throw new UsernameNotFoundException("User not found for unlock: " + username);
+        }
+    }
+}

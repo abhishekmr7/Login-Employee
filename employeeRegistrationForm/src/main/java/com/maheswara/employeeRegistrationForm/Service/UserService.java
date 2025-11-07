@@ -1,0 +1,84 @@
+package com.maheswara.employeeRegistrationForm.Service;
+
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.LockedException;
+import org.springframework.security.core.userdetails.*;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import com.maheswara.employeeRegistrationForm.Model.User;
+import com.maheswara.employeeRegistrationForm.Repository.UserRepository;
+
+@Service
+@Transactional
+public class UserService implements UserDetailsService {
+
+    private static final int LOCK_THRESHOLD = 3;
+
+    @Autowired private UserRepository repo;
+    @Autowired private PasswordEncoder encoder;
+
+    public User register(User user) {
+        repo.findByUsername(user.getUsername())
+            .ifPresent(u -> { throw new RuntimeException("Username already exists"); });
+
+        String role = (user.getRole() == null || user.getRole().isBlank()) ? "USER" : user.getRole().toUpperCase();
+        user.setRole(role);
+
+        user.setPassword(encoder.encode(user.getPassword()));
+        return repo.save(user);
+    }
+
+    public Optional<User> findByUsername(String username) {
+        return repo.findByUsername(username);
+    }
+
+    public void increaseFailedAttempts(String username) {
+        repo.findByUsername(username).ifPresent(u -> {
+            int attempts = u.getFailedAttempts() + 1;
+            u.setFailedAttempts(attempts);
+            if (attempts >= LOCK_THRESHOLD) u.setAccountLocked(true);
+            repo.save(u);
+        });
+    }
+
+    public void resetFailedAttempts(String username) {
+        repo.findByUsername(username).ifPresent(u -> {
+            u.setFailedAttempts(0);
+            u.setAccountLocked(false);
+            u.updateLoginTime();
+            repo.save(u);
+        });
+    }
+
+    public void updateLogoutTime(String username) {
+        repo.findByUsername(username).ifPresent(u -> {
+            u.updateLogoutTime();
+            repo.save(u);
+        });
+    }
+
+    public void unlockAccount(String username) {
+        repo.findByUsername(username).ifPresent(u -> {
+            u.setAccountLocked(false);
+            u.setFailedAttempts(0);
+            repo.save(u);
+        });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = repo.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (user.isAccountLocked()) throw new LockedException("Account locked due to failed attempts");
+
+        return org.springframework.security.core.userdetails.User
+                .withUsername(user.getUsername())
+                .password(user.getPassword())
+                .roles(user.getRole())
+                .build();
+    }
+}

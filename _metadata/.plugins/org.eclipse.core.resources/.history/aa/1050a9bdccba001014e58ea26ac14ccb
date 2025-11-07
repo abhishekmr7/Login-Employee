@@ -1,0 +1,14 @@
+package com.maheswara.employeeRegistrationForm.Repository;
+
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.maheswara.employeeRegistrationForm.Model.User;
+
+public interface UserRepository extends JpaRepository<User,Long> {
+	
+	User registerUser(User user);
+	Optional<User> findByUsername(String username);
+
+}
